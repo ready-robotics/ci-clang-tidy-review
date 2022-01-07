@@ -173,8 +173,7 @@ def post_lgtm_comment(pull_request):
 
     for comment in comments:
         if comment.body == BODY:
-            print("Already posted, no need to update")
-            return
+            print("Already posted lgtm, will post it again.")
 
     pull_request.create_issue_comment(BODY)
 

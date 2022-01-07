@@ -347,30 +347,43 @@ if __name__ == "__main__":
         with open(build_compile_commands, "r") as f:
             compile_commands = json.load(f)
 
+        # Assume program is invoked from new source directory.
+        # Infer old source directory from argument --build_dir (containing compile_commands.json)
+        # --build_dir should have been inside the source directory to enable
+        # patching compile_commands.json to with the new source directory location.
         original_directory = compile_commands[0]["directory"]
-
-        # directory should either end with the build directory,
-        # unless it's '.', in which case use all of directory
+        oldBaseDir = None
         if original_directory.endswith(args.build_dir):
+            # Argument --build_dir is child of original source directory.
+            # Calculate and save original source directory in 'oldBaseDir' to enable
+            # patching the source directory path inside compile_commands.json
             build_dir_index = -(len(args.build_dir) + 1)
+            oldBaseDir = original_directory[:build_dir_index]
         elif args.build_dir == ".":
-            build_dir_index = -1
+            # Argument --build_dir was not passed.
+            # Assume old build directory is same as root of old source directory.
+            # Assume first directory in compile_commands.json is old source directory
+            oldBaseDir = original_directory
         else:
-            raise RuntimeError(
-                f"compile_commands.json contains absolute paths that I don't know how to deal with: '{original_directory}'"
+            # Notify and proceed without patching compile_commands.json.
+            # Assumes source code is at same location in CI filesystem as original build filesystem.
+            # Build directory may be located outside of source directory.
+            # Location of source directory must match between CI filesystem and original build filesystem.
+            print(
+                f"Failed to determine original source code root from build_dir argument and compile_commands.json directory '{original_directory}'"
             )
 
-        basedir = original_directory[:build_dir_index]
-        newbasedir = os.getcwd()
+        if oldBaseDir is not None:
+            newbasedir = os.getcwd()
 
-        print(f"Replacing '{basedir}' with '{newbasedir}'", flush=True)
+            print(f"Replacing '{oldBaseDir}' with '{newbasedir}'", flush=True)
 
-        modified_compile_commands = json.dumps(compile_commands).replace(
-            basedir, newbasedir
-        )
+            modified_compile_commands = json.dumps(compile_commands).replace(
+                oldBaseDir, newbasedir
+            )
 
-        with open(build_compile_commands, "w") as f:
-            f.write(modified_compile_commands)
+            with open(build_compile_commands, "w") as f:
+                f.write(modified_compile_commands)
 
     main(
         repo=args.repo,

@@ -276,6 +276,9 @@ def main(
     print("Posting the review:\n", pprint.pformat(trimmed_review), flush=True)
     pull_request.create_review(**trimmed_review)
 
+    with open('package_comment_count.txt', 'w') as f:
+        print("{}".format(total_comments), file=f)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(

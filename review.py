@@ -164,10 +164,11 @@ def get_clang_tidy_warnings(
     return output.stdout.splitlines()
 
 
-def post_lgtm_comment(pull_request):
+def post_lgtm_comment(pull_request, package_name):
     """Post a "LGTM" comment if everything's clean, making sure not to spam"""
 
-    BODY = 'clang-tidy review says "All clean, LGTM! :+1:"'
+
+    BODY = 'clang-tidy review says "{} is clean, {} LGTM! :+1:"'.format(package_name, package_name)
 
     comments = pull_request.get_issue_comments()
 
@@ -261,7 +262,8 @@ def main(
     pull_request = repo.get_pull(pr_number)
 
     if review["comments"] == []:
-        post_lgtm_comment(pull_request)
+        package_name = os.path.basename(os.path.dirname(build_dir))
+        post_lgtm_comment(pull_request, package_name)
         return
 
     print("Removing already posted or extra comments", flush=True)
